@@ -70,7 +70,7 @@ def train_nuisance_model(
     hidden_dim: int = 32,
     epochs: int = 50,
     learning_rate: float = 0.01,
-    batch_size: int = 32,
+    batch_size: int = 1024,
     random_state: Optional[int] = None,
     device: str = "cpu",
 ) -> NuisanceMLP:
@@ -89,8 +89,9 @@ def train_nuisance_model(
         Number of training epochs.
     learning_rate : float, default=0.01
         Learning rate for Adam optimizer.
-    batch_size : int, default=32
-        Mini-batch size.
+    batch_size : int, default=1024
+        Mini-batch size. Smaller batches make more optimizer updates per epoch
+        and can overfit small training folds.
     random_state : Optional[int], default=None
         Deterministic random seed for PyTorch initializations.
     device : str, default="cpu"

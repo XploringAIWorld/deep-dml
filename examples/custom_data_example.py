@@ -40,7 +40,7 @@ def main() -> None:
     # 2. Instantiate DeepDML
     model = DeepDML(
         hidden_dim=24,
-        epochs=30,
+        epochs=50,
         learning_rate=0.01,
         n_splits=2,
         random_state=123,

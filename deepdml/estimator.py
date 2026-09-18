@@ -148,20 +148,21 @@ class DeepDML:
     Neural Double Machine Learning estimator for the partially linear causal model.
 
     The partially linear model assumes:
-        Y = θ * T + g(X) + ε
+        Y = θ * T + h(X) + ε
         T = m(X) + ν
 
     where:
         - X represents observed confounders
         - T represents treatment (continuous or binary)
         - Y represents outcome
-        - g(X) = E[Y|X] is the conditional outcome nuisance model
+        - h(X) is the structural effect of observed confounders on Y
         - m(X) = E[T|X] is the conditional treatment nuisance model
         - θ is the Average Treatment Effect (ATE)
 
-    DeepDML estimates g(X) and m(X) with neural networks using K-fold cross-fitting,
+    The outcome nuisance function is ell(X) = E[Y|X] = θ m(X) + h(X).
+    DeepDML estimates ell(X) and m(X) with neural networks using K-fold cross-fitting,
     computes out-of-fold residuals:
-        Y_tilde = Y - g_hat(X)
+        Y_tilde = Y - ell_hat(X)
         T_tilde = T - m_hat(X)
     and estimates the ATE via orthogonal residual regression:
         ATE = sum(T_tilde * Y_tilde) / sum(T_tilde^2)
@@ -174,8 +175,9 @@ class DeepDML:
         Number of training epochs per nuisance model.
     learning_rate : float, default=0.01
         Learning rate for Adam optimizer.
-    batch_size : int, default=32
-        Batch size for training nuisance models.
+    batch_size : int, default=1024
+        Batch size for training nuisance models. A larger default limits
+        overfitting on typical cross-fitting folds.
     n_splits : int, default=2
         Number of cross-fitting folds (must be >= 2).
     random_state : Optional[int], default=None
@@ -206,7 +208,7 @@ class DeepDML:
         hidden_dim: int = 32,
         epochs: int = 50,
         learning_rate: float = 0.01,
-        batch_size: int = 32,
+        batch_size: int = 1024,
         n_splits: int = 2,
         random_state: Optional[int] = None,
         device: str = "cpu",
@@ -267,7 +269,7 @@ class DeepDML:
             X_train_scaled = scaler.fit_transform(X_arr[train_idx])
             X_val_scaled = scaler.transform(X_arr[val_idx])
 
-            # 1. Train conditional outcome model g(X) = E[Y|X]
+            # 1. Train conditional outcome model ell(X) = E[Y|X]
             outcome_model = train_nuisance_model(
                 X_train=X_train_scaled,
                 y_train=y_arr[train_idx],

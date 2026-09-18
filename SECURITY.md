@@ -22,6 +22,6 @@ Please **do not** report security vulnerabilities via public GitHub issues, pull
 
 ## Response Process
 
-- We will acknowledge receipt of your vulnerability report within 72 hours.
+- Maintainers will acknowledge receipt of a vulnerability report as soon as practical.
 - We will provide an assessment of the issue and collaborate on a remediation strategy.
 - Upon releasing a fix, an advisory will be published acknowledging the reporter (unless anonymity is requested).

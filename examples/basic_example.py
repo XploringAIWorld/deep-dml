@@ -34,9 +34,8 @@ def main() -> None:
     # 2. Initialize DeepDML estimator
     model = DeepDML(
         hidden_dim=32,
-        epochs=40,
+        epochs=50,
         learning_rate=0.01,
-        batch_size=32,
         n_splits=3,
         random_state=42,
     )

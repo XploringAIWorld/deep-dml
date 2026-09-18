@@ -21,12 +21,12 @@ def make_synthetic_causal_data(
 
     The partially linear structural equation model is:
         T = m(X) + ν
-        Y = θ * T + g(X) + ε
+        Y = θ * T + h(X) + ε
 
     where:
         - X is a matrix of observed confounders drawn from N(0, I)
         - m(X) represents confounding on treatment
-        - g(X) represents non-linear confounding on outcome
+        - h(X) represents non-linear confounding on outcome
         - θ is the constant treatment effect (ATE)
         - ν, ε are independent Gaussian noise terms
 
@@ -87,15 +87,15 @@ def make_synthetic_causal_data(
     else:
         treatment = m_X + treatment_noise
 
-    # 3. Confounding function for outcome: g(X)
+    # 3. Structural confounding function for outcome: h(X)
     # Non-linear relationship with outcome
-    g_X = 1.2 * X[:, 0] + 0.6 * (X[:, 1] ** 2)
+    h_X = 1.2 * X[:, 0] + 0.6 * (X[:, 1] ** 2)
     if n_features >= 4:
-        g_X = g_X + 0.8 * np.cos(X[:, 3])
+        h_X = h_X + 0.8 * np.cos(X[:, 3])
 
     outcome_noise = rng.normal(loc=0.0, scale=0.5, size=n_samples)
 
-    # 4. Generate outcome Y = θ * T + g(X) + ε
-    outcome = (treatment_effect * treatment) + g_X + outcome_noise
+    # 4. Generate outcome Y = θ * T + h(X) + ε
+    outcome = (treatment_effect * treatment) + h_X + outcome_noise
 
     return X, treatment, outcome, float(treatment_effect)

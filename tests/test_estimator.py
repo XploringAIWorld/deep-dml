@@ -35,6 +35,22 @@ def test_estimator_fit_success(sample_causal_data):
     assert not math.isinf(model.ate_)
 
 
+@pytest.mark.parametrize("binary_treatment", [False, True])
+def test_recovers_known_effect_on_synthetic_data(binary_treatment):
+    """Check treatment-effect recovery on a reproducible data-generating process."""
+    X, treatment, outcome, true_effect = make_synthetic_causal_data(
+        n_samples=1000,
+        n_features=8,
+        treatment_effect=2.0,
+        binary_treatment=binary_treatment,
+        random_state=42,
+    )
+
+    model = DeepDML(n_splits=3, random_state=42).fit(X, treatment, outcome)
+
+    assert abs(model.ate_ - true_effect) < 0.2
+
+
 def test_fitted_attributes(sample_causal_data):
     """Verify all required public attributes are properly populated upon fitting."""
     X, t, y, _ = sample_causal_data
@@ -227,4 +243,3 @@ def test_near_zero_denominator_protection(monkeypatch, sample_causal_data):
 
     with pytest.raises(ValueError, match="Treatment residual variance is virtually zero"):
         model.fit(X, t, y)
-

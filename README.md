@@ -4,7 +4,7 @@ A lightweight neural Double Machine Learning toolkit for causal treatment-effect
 
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests](https://github.com/<username>/deep-dml/actions/workflows/tests.yml/badge.svg)](https://github.com/<username>/deep-dml/actions)
+[![Tests](https://github.com/XploringAIWorld/deep-dml/actions/workflows/tests.yml/badge.svg)](https://github.com/XploringAIWorld/deep-dml/actions/workflows/tests.yml)
 
 ---
 
@@ -12,7 +12,7 @@ A lightweight neural Double Machine Learning toolkit for causal treatment-effect
 
 **Deep-DML** is an open-source Python toolkit for neural Double Machine Learning (DML) and causal treatment-effect estimation from observational data. It implements Chernozhukov et al.'s Double/Debiased Machine Learning framework for partially linear models, using PyTorch multi-layer perceptrons as flexible non-parametric nuisance estimators coupled with K-fold cross-fitting and Neyman-orthogonal score residualization.
 
-In observational studies, naive regression estimates of treatment effects often suffer from severe confounding bias, while standard machine learning models applied directly to outcome prediction can introduce regularization bias. Double Machine Learning resolves both challenges: non-parametric models isolate the confounding relationships, and orthogonalized residual regression extracts root-N consistent, asymptotically unbiased estimates of the Average Treatment Effect (ATE).
+In observational studies, naive regression estimates of treatment effects can suffer from confounding bias, while flexible outcome models can introduce regularization bias. Double Machine Learning combines nuisance estimation, cross-fitting, and an orthogonal score to reduce sensitivity to nuisance-model errors. Causal interpretation and statistical guarantees still require identification and nuisance-estimation assumptions that this package cannot verify.
 
 Deep-DML is designed to provide a clean, accessible, and self-contained implementation suitable for researchers, developers, students, and practitioners exploring the intersection of deep learning and causal inference.
 
@@ -26,7 +26,7 @@ Deep-DML does not aim to replace established causal ecosystems. Instead, it prov
 - **Radical clarity**: A streamlined codebase where mathematical operations map directly to clean Python functions.
 - **Neural flexibility**: Native PyTorch nuisance models that serve as a transparent starting point for deep causal architectures.
 - **Leakage-free cross-fitting**: Rigorous out-of-fold sample splitting where all preprocessing and training remain isolated to training folds.
-- **Zero bloat**: A lightweight package with minimal dependencies that installs and runs tests in seconds on standard CPU hardware.
+- **Focused implementation**: A small API and a short test suite that run on standard CPU hardware; installing PyTorch may take longer.
 
 ---
 
@@ -67,8 +67,7 @@ graph TD
 You can clone and install the package locally in editable development mode:
 
 ```bash
-# Clone the repository (replace <username> with your GitHub handle)
-git clone https://github.com/<username>/deep-dml.git
+git clone https://github.com/XploringAIWorld/deep-dml.git
 cd deep-dml
 
 # Install dependencies and package in editable mode
@@ -116,19 +115,19 @@ print(f"Estimated ATE:         {model.ate_:.3f}")
 model.summary()
 ```
 
-Output:
+Example output (exact values can vary with library versions):
 ```text
 True Treatment Effect: 2.000
-Estimated ATE:         1.489
+Estimated ATE:         1.936
 
 Deep-DML Estimation Summary
 ----------------------------------------
 Samples:                1000
 Features:               8
 Cross-fitting folds:    3
-Estimated ATE:          1.4889
-Treatment residual std: 0.6169
-Outcome residual std:   1.3437
+Estimated ATE:          1.9362
+Treatment residual std: 0.5493
+Outcome residual std:   1.2690
 ----------------------------------------
 ```
 
@@ -139,7 +138,7 @@ Outcome residual std:   1.3437
 Deep-DML models the partially linear structural equation system:
 
 $$\begin{aligned}
-Y &= \theta T + g(X) + \varepsilon, \quad &\mathbb{E}[\varepsilon \mid X, T] = 0 \\
+Y &= \theta T + h(X) + \varepsilon, \quad &\mathbb{E}[\varepsilon \mid X, T] = 0 \\
 T &= m(X) + \nu, \quad &\mathbb{E}[\nu \mid X] = 0
 \end{aligned}$$
 
@@ -148,13 +147,13 @@ where $X$ represents observed confounders, $T$ is the treatment (continuous or b
 The estimation proceeds in four main stages:
 
 1. **Nuisance Function Estimation**:
-   The conditional expectations $g(X) = \mathbb{E}[Y|X]$ and $m(X) = \mathbb{E}[T|X]$ are approximated non-parametrically using multi-layer perceptrons.
+   The structural confounder term is $h(X)$. The networks approximate $\ell(X) = \mathbb{E}[Y|X] = \theta m(X) + h(X)$ and $m(X) = \mathbb{E}[T|X]$. Both continuous and binary treatments use an MSE-trained regression network to estimate $m(X)$.
 2. **K-Fold Cross-Fitting**:
-   To prevent overfitting and eliminate sample-reuse bias, the dataset is partitioned into $K$ folds. For each fold $k$, nuisance models are trained exclusively on the remaining $K - 1$ folds and used to generate predictions strictly for the held-out fold $k$. Any feature standardization is fitted strictly on the training fold to avoid data leakage.
+   To reduce sample-reuse bias, the dataset is partitioned into $K$ folds. For each fold $k$, nuisance models are trained exclusively on the remaining $K - 1$ folds and used to generate predictions strictly for the held-out fold $k$. Feature standardization is fitted on the training fold to avoid data leakage.
 3. **Neyman-Orthogonal Residualization**:
    Out-of-fold residuals are constructed:
-   $$\tilde{Y} = Y - \hat{g}(X), \qquad \tilde{T} = T - \hat{m}(X)$$
-   Orthogonal score residualization ensures that the first-order estimation errors of $\hat{g}$ and $\hat{m}$ do not bias the estimation of $\theta$.
+   $$\tilde{Y} = Y - \hat{\ell}(X), \qquad \tilde{T} = T - \hat{m}(X)$$
+   Under suitable conditions, the orthogonal score reduces the first-order effect of small nuisance-estimation errors on $\hat{\theta}$.
 4. **Treatment-Effect Estimation**:
    The Average Treatment Effect is solved using the closed-form orthogonal regression:
    $$\hat{\theta} = \frac{\sum_{i=1}^N \tilde{T}_i \tilde{Y}_i}{\sum_{i=1}^N \tilde{T}_i^2}$$
@@ -164,7 +163,7 @@ The estimation proceeds in four main stages:
 
 ## Current Scope
 
-Version `1.0.0` focuses intentionally on a compact, highly reliable partially linear Double Machine Learning estimator for the constant Average Treatment Effect (ATE). It handles both continuous treatments and binary treatments (coded as 0 and 1) via regression-based nuisance models.
+Version `1.0.0` focuses on a compact partially linear Double Machine Learning estimator for a constant treatment effect. It handles continuous treatments and binary treatments coded as 0 and 1 via regression-based nuisance models.
 
 ---
 
@@ -174,6 +173,8 @@ Version `1.0.0` focuses intentionally on a compact, highly reliable partially li
 - **Confidence Intervals**: Analytic standard errors and bootstrap-based confidence intervals are not yet implemented in Version 1.0.0.
 - **Overlap Diagnostics**: Advanced propensity overlap checking (such as trimming rules or propensity histograms) is not automated.
 - **Nuisance Architectures**: PyTorch nuisance networks use standard feedforward MLP architectures.
+- **Estimation Quality**: Results depend on how well the nuisance networks fit the data. The number of epochs and batch size may need tuning within training folds; the included synthetic example is a regression check, not a general accuracy guarantee.
+- **Causal Assumptions**: A causal interpretation requires adequate control for confounding, treatment variation, and appropriate model assumptions. These are not established by fitting the estimator.
 - **Target Audience & Usage**: Deep-DML is intended for research, education, experimentation, and methodological prototyping. For high-stakes, safety-critical industrial decisions, users are encouraged to consult mature, validated production ecosystems such as EconML or DoubleML.
 
 ---
@@ -211,4 +212,4 @@ Please review our [Code of Conduct](CODE_OF_CONDUCT.md) before participating.
 
 This project is licensed under the terms of the [MIT License](LICENSE).
 
-Copyright (c) 2026 Tarun Gudipalli.
+Copyright (c) 2026 Harshavardhan.

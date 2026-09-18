@@ -11,7 +11,7 @@ We welcome contributions of all types: bug fixes, algorithmic improvements, new 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/<username>/deep-dml.git
+git clone https://github.com/XploringAIWorld/deep-dml.git
 cd deep-dml
 ```
 
