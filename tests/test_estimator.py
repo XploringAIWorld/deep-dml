@@ -239,7 +239,15 @@ def test_near_zero_denominator_protection(monkeypatch, sample_causal_data):
     X, t, y, _ = sample_causal_data
     model = DeepDML(hidden_dim=8, epochs=1, n_splits=2, random_state=42)
 
-    monkeypatch.setattr(deepdml.estimator.np, "sum", lambda *args, **kwargs: 0.0)
+    class NumpyWithZeroSum:
+        def __getattr__(self, name):
+            return getattr(np, name)
+
+        @staticmethod
+        def sum(*args, **kwargs):
+            return 0.0
+
+    monkeypatch.setattr(deepdml.estimator, "np", NumpyWithZeroSum())
 
     with pytest.raises(ValueError, match="Treatment residual variance is virtually zero"):
         model.fit(X, t, y)
